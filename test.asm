@@ -1,10 +1,14 @@
-; Try to do some tests
+; x86_64 function call
+
+; Usage:
+;  $ nasm -f elf64 test.asm
+;  $ ld -s -o test test.o
 
 section .data
      txt: db   'input> '
      tln: equ  $-txt
-     dne: db   'done.', 0x0a
-     dln: equ  $-dne
+     fun: db   ':-)', 0x0a
+     fln: equ  $-fun
      err: db   'err', 0x0a
      eln: equ  $-err
      bsz: dw   8192
@@ -16,6 +20,19 @@ section .bss
 
 section .text
      global _start
+
+prnt:
+     push rbp            ; save frame pntr
+     mov  ebp, esp
+
+     mov  eax,4          ; sys_write
+     mov  ebx,1          ; stdout
+     mov  ecx,fun
+     mov  edx,fln
+     int  80h
+
+     pop  rbp
+     ret
 
 _start:
      mov  eax,4          ; sys_write
@@ -33,7 +50,15 @@ _start:
      test eax,eax
      js   error          ; jump on error (-1)
 
-     mov  ebx,1          ; ecx & edx already set
+     push rcx            ; save rcx & rdx
+     push rdx
+     call prnt           ; print :-) times 3
+     call prnt
+     call prnt
+     pop  rdx
+     pop  rcx
+
+     mov  ebx,1          ; ecx & edx should be set
      mov  eax,4
      int  80h
 
