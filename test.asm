@@ -1,84 +1,90 @@
-; x86_64 function call
-
-; Usage:
-; $ nasm -f elf64 test.asm
-; $ ld -s -o test test.o
+; asm: print requested number of dots
 
 section .data
-      txt:  db     'input> '
-      tln:  equ    $-txt
+      buffersz:   db    255
 
-      fun:  db     ':-)',0x0a
-      fln:  equ    $-fun
-      err:  db     'err',0x0a
-      eln:  equ    $-err
-      bsz:  dw     8192
+      inputmsg:   db    'input> '
+      inputlen:   equ   $-inputmsg
 
+      errormsg:   db    'error.',0x0a
+      errorlen:   equ   $-errormsg
+
+      dot:        db    '.'
+      dotsz:      equ   $-dot
 
 section .bss
-      buf: resb 8192
-
+      buffer:     resb  255
 
 section .text
       global _start
 
-prnt:
-      push  rbp   ; save frame pntr
+error:
+      mov   eax, 4            ; print err msg
+      mov   ebx, 1
+      mov   ecx, errormsg
+      mov   edx, errorlen
+      int   80h
+      mov   eax, 1            ; sys_exit
+      mov   ebx, 1            ; exit code 1
+      int   80h
+
+prntrow:
+      push  rbp               ; save frame pntr
       mov   ebp, esp
 
-      mov   eax, 4   ; sys_write
-      mov   ebx, 1   ; stdout
-      mov   ecx, fun
-      mov   edx, fln
+      mov   eax, 4            ; sys_write
+      mov   ebx, 1            ; stdout
+      mov   ecx, dot
+      mov   edx, dotsz
       int   80h
 
       pop   rbp
       ret
 
 _start:
-      mov   eax, 4      ; sys_write
-      mov   ebx, 1      ; stdout
-      mov   ecx, txt
-      mov   edx, tln
+      mov   eax, 4            ; sys_write
+      mov   ebx, 1            ; stdout
+      mov   ecx, inputmsg
+      mov   edx, inputlen
       int   80h
 
-      mov   eax, 3      ; sys_read
-      mov   ebx, 2      ; stdin
-      mov   ecx, buf
-      mov   edx, bsz
+      mov   eax, 3            ; sys_read
+      mov   ebx, 2            ; stdin
+      mov   ecx, buffer
+      mov   edx, buffersz
       int   80h
 
       test  eax, eax
-      js    error       ; jump on error (-1)
+      js    error             ; jump on error (-1)
+
+      mov   ecx, 0            ; ecx is next used as
+                              ; exit code or counter
 
       sub   eax, 1
-      mov   ecx, 0
-      mov   esi, buf
-loop: mov   edx, [esi]
-      sub   edx, 48
-      add   esi, 1
+      test  eax, eax
+      jz    end               ; no input given :-(
+
+      mov   esi, buffer
+nextint:
+      mov   dl,  byte [esi]   ; take a byte
+      add   esi, 1            ; (*buffer)++
+
+      sub   dl,  48
       imul  ecx, 10
-      add   ecx, edx
-      sub   eax, 1
-      test  eax, eax
-      jnz   loop
+      add   cl,  dl
 
-      ; ;
-      ; push rcx   ; save rcx
-      ; call prnt  ; print :-)
-      ; pop  rcx
-      ; ;
+      sub   eax, 1            ; if there's
+      test  eax, eax          ; more to read,
+      jnz   nextint           ; read more
 
-      mov   ebx, ecx    ; exit with ecx
+nextrow:
+      jecxz end
+      push  rcx
+      call  prntrow
+      pop   rcx
+      sub   ecx, 1
+      jmp   nextrow
 
-end:  mov   eax, 1      ; sys_exit
+end:  mov   ebx, ecx          ; exit(ecx)
+      mov   eax, 1
       int   80h
-
-error:
-      mov   eax, 4      ; print err msg
-      mov   ebx, 1
-      mov   ecx, err
-      mov   edx, eln
-      int   80h
-      mov   ebx, 1      ; exit code 1
-      jmp   end
