@@ -1,4 +1,18 @@
-; asm: print requested number of dots
+; asm: print zeros and ones
+
+%ifidn __OUTPUT_FORMAT__, elf32
+  %define .bp ebp
+  %define .cx ecx
+
+%elifidn __OUTPUT_FORMAT__, elf64
+  %define .bp rbp
+  %define .cx rcx
+
+%else
+  %fatal -f elf32 or elf64 required!
+
+%endif
+
 
 section .data
       buffersz:   db    255
@@ -14,6 +28,7 @@ section .data
 
 section .bss
       buffer:     resb  255
+
 
 section .text
       global _start
@@ -62,7 +77,7 @@ _start:
 
       sub   eax, 1
       test  eax, eax
-      jz    end               ; no input given :-(
+      jz    quit              ; no input given :-(
 
       mov   esi, buffer
 nextint:
@@ -78,13 +93,13 @@ nextint:
       jnz   nextint           ; read more
 
 nextrow:
-      jecxz end
-      push  rcx
+      jecxz quit
+      push  .cx
       call  prntrow
-      pop   rcx
+      pop   .cx
       sub   ecx, 1
-      jmp   nextrow
+      ; jmp   nextrow
 
-end:  mov   ebx, ecx          ; exit(ecx)
+quit: mov   ebx, ecx          ; exit(ecx)
       mov   eax, 1
       int   80h
