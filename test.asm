@@ -14,6 +14,11 @@ section .data
       uinput:     db    0
       buf_sz:     db    255
       zerone:     dw    0x3031
+
+	;_;
+      dot:        db    0x2e
+	;_;
+
       mem_at:     dd    0
       mem_sz:     dd    0
 
@@ -97,6 +102,23 @@ _start:
       mov   ax, word [zerone] ; lets initialize memory we have
       shr   ecx, 1
       rep   stosw             ; now it should read 010101..
+
+	;_;
+	mov	al, [dot]
+	mov	edi, [mem_at]
+
+      mov   cl, [uinput]
+	inc	edi
+	inc	edi
+	add	edi, ecx
+	rep	stosb
+
+      mov   cl, [uinput]
+	inc	edi
+	inc	edi
+	add	edi, ecx
+	rep	stosb
+	;_;
 
       mov   eax, 0x0a         ; newlines for the masses
       mov   edi, [mem_at]
