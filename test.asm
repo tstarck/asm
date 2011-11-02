@@ -14,10 +14,7 @@ section .data
       uinput:     db    0
       buf_sz:     db    255
       zerone:     dw    0x3031
-
-	;_;
-      dot:        db    0x2e
-	;_;
+      onezer:     dw    0x3130
 
       mem_at:     dd    0
       mem_sz:     dd    0
@@ -60,12 +57,12 @@ _start:
 
       mov   esi, buffer
 .nextint:
-      mov   dl,  byte [esi]   ; take a byte
+      mov   dl, byte [esi]    ; take a byte
       inc   esi               ; (*buffer)++
 
-      sub   dl,  48
+      sub   dl, 48
       imul  ecx, 10
-      add   cl,  dl
+      add   cl, dl
 
       sub   eax, 1            ; if there's
       test  eax, eax          ; more to read,
@@ -87,8 +84,6 @@ _start:
 
       mov   edi, eax          ; ..and keep it
 
-      ;mov  [mem_at], eax     ;
-
       add   eax, ecx
       mov   ebx, eax
       mov   eax, 45
@@ -101,25 +96,31 @@ _start:
 
       mov   ax, word [zerone] ; lets initialize memory we have
       shr   ecx, 1
-      rep   stosw             ; now it should read 010101..
+      rep   stosw             ; now it should read 010101...
 
-	;_;
-	mov	al, [dot]
-	mov	edi, [mem_at]
+      mov   bl, [uinput]
+      and   ebx, 0x01
 
+      test  ebx, ebx
+      jz    .even
+
+      mov   bl, [uinput]
+      shr   bl, 1
+      mov   ax, [onezer]
+      mov   edi, [mem_at]
+.odds:
       mov   cl, [uinput]
-	inc	edi
-	inc	edi
-	add	edi, ecx
-	rep	stosb
+      add   edi, ecx
+      inc   edi
+      shr   ecx, 1
+      inc   ecx
+      rep   stosw
 
-      mov   cl, [uinput]
-	inc	edi
-	inc	edi
-	add	edi, ecx
-	rep	stosb
-	;_;
+      dec   ebx
+      test  ebx, ebx
+      jnz   .odds
 
+.even:
       mov   eax, 0x0a         ; newlines for the masses
       mov   edi, [mem_at]
       mov   cl, [uinput]
