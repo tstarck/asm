@@ -1,5 +1,5 @@
-LD=ld -s
-ASM=nasm -Wall -f elf64
+LD=ld -s --stats
+ASM=nasm -Ox -Wall -f elf64
 
 all: test
 
